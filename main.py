@@ -10,10 +10,15 @@ from urllib.parse import urlparse
 import requests
 import streamlit as st
 import streamlit.components.v1 as components
-import tiktoken
 from dotenv import load_dotenv
 from github import Github
 from openai import OpenAI
+
+# Moved environment loading and token defaults to config.py
+from config import load_env, model_token_limits
+
+# Token utilities
+from services.token_utils import estimate_tokens
 
 from attack_tree import (
     create_attack_tree_prompt,
@@ -534,90 +539,14 @@ def mermaid(code: str, height: int = 500) -> None:
     )
 
 
-def load_env_variables():
-    # Try to load from .env file
-    if os.path.exists(".env"):
-        load_dotenv(".env")
-
-    # Load GitHub API key from environment variable
-    github_api_key = os.getenv("GITHUB_API_KEY")
-    if github_api_key:
-        st.session_state["github_api_key"] = github_api_key
-
-    # Load other API keys if needed
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if openai_api_key:
-        st.session_state["openai_api_key"] = openai_api_key
-
-    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-    if anthropic_api_key:
-        st.session_state["anthropic_api_key"] = anthropic_api_key
-
-    google_api_key = os.getenv("GOOGLE_API_KEY")
-    if google_api_key:
-        st.session_state["google_api_key"] = google_api_key
-
-    mistral_api_key = os.getenv("MISTRAL_API_KEY")
-    if mistral_api_key:
-        st.session_state["mistral_api_key"] = mistral_api_key
-
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if groq_api_key:
-        st.session_state["groq_api_key"] = groq_api_key
-
-    # Add Ollama endpoint configuration
-    ollama_endpoint = os.getenv("OLLAMA_ENDPOINT", "http://localhost:11434")
-    st.session_state["ollama_endpoint"] = ollama_endpoint
-
-    # Add LM Studio Server endpoint configuration
-    lm_studio_endpoint = os.getenv("LM_STUDIO_ENDPOINT", "http://localhost:1234")
-    st.session_state["lm_studio_endpoint"] = lm_studio_endpoint
+# Environment configuration moved to `config.py`.
+# Use `load_env(st.session_state)` at app start to populate session state from environment variables.
 
 
-# Call this function at the start of your app
-load_env_variables()
+# Load environment configuration into session state
+load_env(st.session_state)
 
-# ------------------ Model Token Limits ------------------ #
-
-# Define token limits for specific model+provider combinations
-# Format: {"provider:model": {"default": default_value, "max": max_value}}
-model_token_limits = {
-    "OpenAI API:gpt-5.2": {"default": 128000, "max": 400000},
-    "OpenAI API:gpt-5-mini": {"default": 64000, "max": 400000},
-    "OpenAI API:gpt-5-nano": {"default": 64000, "max": 400000},
-    "OpenAI API:gpt-5.2-pro": {"default": 128000, "max": 400000},
-    "OpenAI API:gpt-5": {"default": 128000, "max": 400000},
-    "OpenAI API:gpt-4.1": {"default": 128000, "max": 1000000},
-    # Claude models
-    "Anthropic API:claude-sonnet-4-5-20250929": {"default": 64000, "max": 200000},
-    "Anthropic API:claude-haiku-4-5-20251001": {"default": 64000, "max": 200000},
-    "Anthropic API:claude-opus-4-5-20251101": {"default": 64000, "max": 200000},
-    # Mistral models
-    "Mistral API:mistral-large-2512": {"default": 64000, "max": 128000},
-    "Mistral API:mistral-medium-2508": {"default": 64000, "max": 128000},
-    "Mistral API:mistral-small-2506": {"default": 24000, "max": 32000},
-    "Mistral API:ministral-14b-2512": {"default": 64000, "max": 128000},
-    "Mistral API:ministral-8b-2512": {"default": 64000, "max": 128000},
-    "Mistral API:magistral-medium-2509": {"default": 32000, "max": 40000},
-    "Mistral API:magistral-small-2509": {"default": 32000, "max": 40000},
-    # Google models
-    "Google AI API:gemini-3-pro-preview": {"default": 200000, "max": 1000000},
-    "Google AI API:gemini-3-flash-preview": {"default": 200000, "max": 1000000},
-    "Google AI API:gemini-2.5-flash": {"default": 200000, "max": 1000000},
-    "Google AI API:gemini-2.5-flash-lite": {"default": 200000, "max": 1000000},
-    "Google AI API:gemini-2.5-pro": {"default": 200000, "max": 1000000},
-    # Groq models
-    "Groq API:openai/gpt-oss-120b": {"default": 64000, "max": 128000},
-    "Groq API:openai/gpt-oss-20b": {"default": 64000, "max": 128000},
-    "Groq API:llama-3.3-70b-versatile": {"default": 64000, "max": 128000},
-    "Groq API:llama-3.1-8b-instant": {"default": 64000, "max": 131072},
-    "Groq API:deepseek-r1-distill-llama-70b": {"default": 64000, "max": 128000},
-    "Groq API:moonshotai/kimi-k2-instruct": {"default": 64000, "max": 128000},
-    "Groq API:qwen/qwen3-32b": {"default": 64000, "max": 128000},
-    # Ollama and LM Studio - conservative defaults
-    "Ollama:default": {"default": 8000, "max": 32000},
-    "LM Studio Server:default": {"default": 8000, "max": 32000},
-}
+# Token limits and env loading have been moved to `config.py`.
 
 st.set_page_config(
     page_title="STRIDE GPT",

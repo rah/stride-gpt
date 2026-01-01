@@ -5,3 +5,5 @@ api_key.txt
 test_functions.py
 venv/
 .venv/
+.github/copilot-instructions.md
+.github/refactor_main.md
