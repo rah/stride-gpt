@@ -211,29 +211,6 @@ def get_input():
     return input_text
 
 
-def estimate_tokens(text, model="gpt-5.2"):
-    """
-    Estimate the number of tokens in a text string.
-    Uses tiktoken for OpenAI models, or falls back to a character-based approximation.
-
-    Args:
-        text: The text to estimate tokens for
-        model: The model to use for estimation (default: gpt-5.2)
-
-    Returns:
-        Estimated token count
-    """
-    try:
-        # Try to use tiktoken for accurate estimation
-        enc = tiktoken.encoding_for_model(model)
-        return len(enc.encode(text))
-    except (ImportError, KeyError, ValueError):
-        # Fall back to character-based approximation
-        # Different languages have different token densities
-        # English: ~4 chars per token, Chinese: ~1-2 chars per token
-        return len(text) // 4  # Conservative estimate for English text
-
-
 def analyze_github_repo(repo_url):
     # Extract owner and repo name from URL
     parsed_url = urlparse(repo_url)

@@ -7,10 +7,16 @@ except Exception:
 
 
 def estimate_tokens(text: str, model: str = "gpt-5.2") -> int:
-    """Estimate tokens for `text` for a given model.
+    """
+    Estimate the number of tokens in a text string.
+    Uses tiktoken for OpenAI models, or falls back to a character-based approximation.
 
-    Uses `tiktoken.encoding_for_model` when available, otherwise falls back
-    to a conservative character-based heuristic.
+    Args:
+        text: The text to estimate tokens for
+        model: The model to use for estimation (default: gpt-5.2)
+
+    Returns:
+        Estimated token count
     """
     if not text:
         return 0
